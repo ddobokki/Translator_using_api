@@ -33,8 +33,8 @@ class PapagoTranslator():
         '''
         Arguments:
         text : source text
-        source : source language, surport: ko, en, ja
-        target : target language, surport: ko, en, ja
+        source : source language
+        target : target language
 
         return translated text
         '''
