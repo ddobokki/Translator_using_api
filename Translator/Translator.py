@@ -2,46 +2,28 @@ import os
 import sys
 from typing import List
 import urllib.request
+import requests
 import json
+from base_translator import Translator
 
 
-class PapagoTranslator():
-    '''
-    지원 언어
-
-    한국어(ko)
-    영어(en)
-    일본어(ja)
-    중국어 간체(zh-CN)
-    중국어 번체(zh-TW)
-    베트남어(vi)
-    인도네시아어(id)
-    태국어(th)
-    독일어(de)
-    러시아어(ru)
-    스페인어(es)
-    이탈리아어(it)
-    프랑스어(fr)
-    '''
+class PapagoTranslator(Translator):
 
     def __init__(self, client_id: str, client_secret: str):
+        '''
+        client_id: 발급받은 Client ID 값
+        client_secret: 발급받은 Client Secret 값
+        발급 주소: https://developers.naver.com/main/
+
+        '''
+        super().__init__()
         self.client_id = client_id
         self.client_secret = client_secret
         self.url = "https://openapi.naver.com/v1/papago/n2mt"
 
     def translate(self, text: str, source: str, target: str) -> str:
-        '''
-        Arguments:
-        text : source text
-        source : source language
-        target : target language
-
-        return translated text
-        '''
-        surport_lang_list = ['ko', 'en', 'ja', 'zh-CN',
-                             'zh-TW', 'id', 'th', 'de', 'ru', 'es', 'it', 'fr']
-        assert source in surport_lang_list
-        assert target in surport_lang_list
+        assert source in self.surport_lang_list
+        assert target in self.surport_lang_list
         assert source != target
 
         encText = urllib.parse.quote(text)
@@ -62,52 +44,74 @@ class PapagoTranslator():
 
         return translated_text
 
-    def translate_texts(self, texts: List[str], source: str, target: str) -> List[str]:
-        '''
-        Arguments:
-        texts : list of the source texts
-        source : source language
-        target : target language
 
-        return list of the translated texts
+class KaKaoTranslator(Translator):
+    def __init__(self, rest_api_key):
         '''
-        translated_texts = list(
-            map(lambda text: self.translate(text, source, target), texts))
-        return translated_texts
-
-    def back_translate(self, text: str, source: str, target: str) -> str:
+        rest_api_key: 발급 받은 REST API KEY
+        발급 주소: https://developers.kakao.com/
         '''
-        Arguments:
-        text : source text
-        source : source language
-        target : target language
+        super().__init__()
+        self.url = "https://dapi.kakao.com/v2/translation/translate"
+        self.rest_api_key = rest_api_key
 
-        return source language text translated from the target language.
-        '''
-        translated_text = self.translate(text, source, target)
-        back_translated_text = self.translate(translated_text, target, source)
-        return back_translated_text
+    def translate(self, text: str, source: str, target: str) -> str:
+        assert source in self.surport_lang_list
+        assert target in self.surport_lang_list
+        assert source != target
 
-    def back_translate_texts(self, texts: List[str], source: str, target: str) -> List[str]:
-        '''
-        Arguments:
-        texts : list of the source texts
-        source : source language
-        target : target language
+        source, target = self._convert_lang_code(source, target)
 
-        return list of the source language texts translated from the target language.
-        '''
+        params = {'query': text, 'src_lang': source, 'target_lang': target}
+        header = {'authorization': f'KakaoAK {self.rest_api_key}'}
+        response = requests.get(url=self.url, headers=header, params=params)
 
-        back_translated_texts = list(
-            map(lambda text: self.back_translate(text, source, target), texts))
-        return back_translated_texts
+        if response.status_code == 200:
+            decode = response.json()
+            translated_text = decode['translated_text'][0][0]
+        else:
+            print("Error Code:" + response.status_code)
+        return translated_text
+
+    # def translate_texts(self, texts: List[str], source: str, target: str) -> List[str]:
+    #     source, target = self._convert_lang_code(source, target)
+    #     return super().translate_texts(texts, source, target)
+
+    # def back_translate(self, text: str, source: str, target: str) -> str:
+    #     source, target = self._convert_lang_code(source, target)
+    #     return super().back_translate(text, source, target)
+
+    # def back_translate_texts(self, texts: List[str], source: str, target: str) -> List[str]:
+    #     source, target = self._convert_lang_code(source, target)
+    #     return super().back_translate_texts(texts, source, target)
+
+    def _convert_lang_code(self, source, target):
+        if source == 'ko':
+            source = 'kr'
+        elif source == 'ja':
+            source = 'jp'
+        elif source == 'zh-TW' or source == 'zh-CN':
+            source = 'cn'
+
+        if target == 'ko':
+            target = 'kr'
+        elif target == 'ja':
+            target = 'jp'
+        elif target == 'zh-TW' or target == 'zh-CN':
+            target = 'cn'
+
+        return source, target
 
 
 if __name__ == '__main__':
+    '''
+    발급 주소: https://developers.naver.com/main/
+    개발자센터에서 발급받은 Client ID 값
+    개발자센터에서 발급받은 Client Secret 값
+    '''
 
-    # 발급 주소: https://developers.naver.com/main/
-    client_id = "id"  # 개발자센터에서 발급받은 Client ID 값
-    client_secret = "secret"  # 개발자센터에서 발급받은 Client Secret 값
+    client_id = "ksdpYJ5vh4OmBUjMpOH3"
+    client_secret = "tluqvtIR6Z"
 
     ppg = PapagoTranslator(client_id, client_secret)
     print(ppg.translate('안녕하세요', 'ko', 'en'))
@@ -115,4 +119,18 @@ if __name__ == '__main__':
     print(ppg.back_translate(
         'Billie Jean is not my lover', 'en', 'zh-CN'))
     print(ppg.back_translate_texts(
+        ['노인을 위한 나라는 없다.', '어벤져스:가망 없음 ', '스파이더맨: 노 웨이 홈'], 'ko', 'de'))
+
+    '''
+    rest_api_key: 발급 받은 REST API KEY
+    발급 주소: https://developers.kakao.com/
+    '''
+
+    rest_api_key = '2dc70d68bb62f4353cbadc6d440e2b38'
+    kko = KaKaoTranslator(rest_api_key)
+    print(kko.translate('안녕하세요', 'ko', 'en'))
+    print(kko.translate_texts(['안녕하세요.', '번역기', '테스트입니다.'], 'ko', 'ja'))
+    print(kko.back_translate(
+        'Billie Jean is not my lover', 'en', 'zh-CN'))
+    print(kko.back_translate_texts(
         ['노인을 위한 나라는 없다.', '어벤져스:가망 없음 ', '스파이더맨: 노 웨이 홈'], 'ko', 'de'))
