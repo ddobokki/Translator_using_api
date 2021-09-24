@@ -73,18 +73,6 @@ class KaKaoTranslator(Translator):
             print("Error Code:" + response.status_code)
         return translated_text
 
-    # def translate_texts(self, texts: List[str], source: str, target: str) -> List[str]:
-    #     source, target = self._convert_lang_code(source, target)
-    #     return super().translate_texts(texts, source, target)
-
-    # def back_translate(self, text: str, source: str, target: str) -> str:
-    #     source, target = self._convert_lang_code(source, target)
-    #     return super().back_translate(text, source, target)
-
-    # def back_translate_texts(self, texts: List[str], source: str, target: str) -> List[str]:
-    #     source, target = self._convert_lang_code(source, target)
-    #     return super().back_translate_texts(texts, source, target)
-
     def _convert_lang_code(self, source, target):
         if source == 'ko':
             source = 'kr'
@@ -110,8 +98,8 @@ if __name__ == '__main__':
     개발자센터에서 발급받은 Client Secret 값
     '''
 
-    client_id = "ksdpYJ5vh4OmBUjMpOH3"
-    client_secret = "tluqvtIR6Z"
+    client_id = ''
+    client_secret = ''
 
     ppg = PapagoTranslator(client_id, client_secret)
     print(ppg.translate('안녕하세요', 'ko', 'en'))
@@ -126,7 +114,7 @@ if __name__ == '__main__':
     발급 주소: https://developers.kakao.com/
     '''
 
-    rest_api_key = '2dc70d68bb62f4353cbadc6d440e2b38'
+    rest_api_key = ''
     kko = KaKaoTranslator(rest_api_key)
     print(kko.translate('안녕하세요', 'ko', 'en'))
     print(kko.translate_texts(['안녕하세요.', '번역기', '테스트입니다.'], 'ko', 'ja'))
